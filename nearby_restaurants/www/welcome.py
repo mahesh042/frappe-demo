@@ -36,7 +36,7 @@ def get_restaurant_distances(source_lat, source_lng):
     return results
 
 def get_route_distance(coord1, coord2):
-    url = f"https://5ba7-103-182-117-92.ngrok-free.app/route/v1/driving/{coord1[1]},{coord1[0]};{coord2[1]},{coord2[0]}?overview=false"
+    url = f"https://da1e-103-182-117-90.ngrok-free.app/route/v1/driving/{coord1[1]},{coord1[0]};{coord2[1]},{coord2[0]}?overview=false"
     response = requests.get(url)
     data = response.json()
     if data['code'] == 'Ok':

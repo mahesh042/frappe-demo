@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <title>Card with Map</title>
+    <title>Restaurant Finder</title>
     <style>
         #map {
             height: 150px;
@@ -38,7 +38,7 @@
                     <p class="mb-0 mr-2">Find restaurants within:</p>
                     <div class="dropdown">
                         <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            Select Distance
+                            5 Kilometers
                         </button>
                         <div class="dropdown-menu" aria-labelledby="dropdownMenu2">
                             <button class="dropdown-item" type="button" data-distance="5">5 Kilometers</button>
@@ -71,57 +71,66 @@
                 maxZoom: 19,
             }).addTo(map);
             L.marker([lat, lng]).addTo(map).openPopup();
-            $('.dropdown-item').on('click', function () {
-                var selectedDistance = $(this).data('distance');
 
-                $('#dropdownMenu2').text(`${selectedDistance} Kilometers`);
+            let allRestaurants = [];
+            const defaultDistance = 5; // Set default distance here
 
-                fetchRestaurants(selectedDistance);
-            });
-            function fetchRestaurants(maxDistanceKm) {
+            function fetchRestaurants() {
                 $.ajax({
-                    url: `/api/method/nearby_restaurants.www.welcome.fetch_restaurants_with_distances?max_distance_km=${maxDistanceKm}`,
+                    url: `/api/method/nearby_restaurants.www.welcome.fetch_restaurants_with_distances`,
                     type: 'GET',
                     success: function (response) {
-                        console.log(`Fetched ${response.message.length} restaurants for ${maxDistanceKm} km`);
-                        var restaurants = response.message;
-                        var restaurantList = $('#restaurant-list');
-                        restaurantList.empty();
-                        var filteredRestaurants = restaurants.filter(function (restaurant) {
-                            return restaurant.distance <= maxDistanceKm;
-                        }).sort(function (a, b) {
-                            return a.distance - b.distance;
-                        });
-                        var rowContent = '';
-                        filteredRestaurants.forEach(function (restaurant, index) {
-                            if (index % 3 === 0) {
-                                if (index > 0) {
-                                    restaurantList.append(`<div class="row">${rowContent}</div>`);
-                                }
-                                rowContent = '';
-                            }
-                            rowContent += `
-                                <div class="col-md-4 mb-3">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <h5 class="card-title">${restaurant.name}</h5>
-                                            <p class="card-text">Location: ${restaurant.location}</p>
-                                            <p class="card-text">Distance: ${restaurant.distance} Kilometers</p>
-      
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                        if (rowContent) {
-                            restaurantList.append(`<div class="row">${rowContent}</div>`);
-                        }
+                        console.log(`Fetched ${response.message.length} restaurants`);
+                        allRestaurants = response.message;
+                        updateRestaurantList(defaultDistance); // Default distance filter
                     },
                     error: function () {
                         alert('Failed to fetch restaurant data.');
                     }
                 });
             }
+
+            $('.dropdown-item').on('click', function () {
+                var selectedDistance = $(this).data('distance');
+                $('#dropdownMenu2').text(`${selectedDistance} Kilometers`);
+                updateRestaurantList(selectedDistance);
+            });
+
+            function updateRestaurantList(maxDistanceKm) {
+                var restaurantList = $('#restaurant-list');
+                restaurantList.empty();
+                var filteredRestaurants = allRestaurants.filter(function (restaurant) {
+                    return restaurant.distance <= maxDistanceKm;
+                }).sort(function (a, b) {
+                    return a.distance - b.distance;
+                });
+
+                var rowContent = '';
+                filteredRestaurants.forEach(function (restaurant, index) {
+                    if (index % 3 === 0) {
+                        if (index > 0) {
+                            restaurantList.append(`<div class="row">${rowContent}</div>`);
+                        }
+                        rowContent = '';
+                    }
+                    rowContent += `
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">${restaurant.name}</h5>
+                                    <p class="card-text">Location: ${restaurant.location}</p>
+                                    <p class="card-text">Distance: ${restaurant.distance} Kilometers</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                if (rowContent) {
+                    restaurantList.append(`<div class="row">${rowContent}</div>`);
+                }
+            }
+
+            fetchRestaurants(); // Initial fetch
         });
     </script>
 </body>
