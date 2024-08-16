@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <title>Card with Map</title>
+    <style>
+        #map {
+            height: 150px;
+        }
+
+        .card {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+
+        .card-body {
+            flex: 1 0 auto;
+            min-height: 150px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-4">
+        <div class="card mb-3">
+            <div id="map" class="card-img-top"></div>
+            <div class="card-body">
+                <h5 class="card-title">Source Location: {{ source_data.name1 }}</h5>
+                <p class="card-text">Source Location Address: {{ source_data.address }}</p>
+
+                <div class="d-flex align-items-center">
+                    <p class="mb-0 mr-2">Find restaurants within:</p>
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Select Distance
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                            <button class="dropdown-item" type="button" data-distance="5">5 Kilometers</button>
+                            <button class="dropdown-item" type="button" data-distance="10">10 Kilometers</button>
+                            <button class="dropdown-item" type="button" data-distance="15">15 Kilometers</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="restaurant-list" class="mt-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var lat = parseFloat("{{ source_data.lat }}");
+            var lng = parseFloat("{{ source_data.long }}");
+            if (isNaN(lat) || isNaN(lng)) {
+                console.error("Latitude or Longitude is not a number.");
+                return;
+            }
+            var map = L.map('map').setView([lat, lng], 18);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+            }).addTo(map);
+            L.marker([lat, lng]).addTo(map).openPopup();
+            $('.dropdown-item').on('click', function () {
+                var selectedDistance = $(this).data('distance');
+
+                $('#dropdownMenu2').text(`${selectedDistance} Kilometers`);
+
+                fetchRestaurants(selectedDistance);
+            });
+            function fetchRestaurants(maxDistanceKm) {
+                $.ajax({
+                    url: `/api/method/nearby_restaurants.www.welcome.fetch_restaurants_with_distances?max_distance_km=${maxDistanceKm}`,
+                    type: 'GET',
+                    success: function (response) {
+                        console.log(`Fetched ${response.message.length} restaurants for ${maxDistanceKm} km`);
+                        var restaurants = response.message;
+                        var restaurantList = $('#restaurant-list');
+                        restaurantList.empty();
+                        var filteredRestaurants = restaurants.filter(function (restaurant) {
+                            return restaurant.distance <= maxDistanceKm;
+                        }).sort(function (a, b) {
+                            return a.distance - b.distance;
+                        });
+                        var rowContent = '';
+                        filteredRestaurants.forEach(function (restaurant, index) {
+                            if (index % 3 === 0) {
+                                if (index > 0) {
+                                    restaurantList.append(`<div class="row">${rowContent}</div>`);
+                                }
+                                rowContent = '';
+                            }
+                            rowContent += `
+                                <div class="col-md-4 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">${restaurant.name}</h5>
+                                            <p class="card-text">Location: ${restaurant.location}</p>
+                                            <p class="card-text">Distance: ${restaurant.distance} Kilometers</p>
+      
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        if (rowContent) {
+                            restaurantList.append(`<div class="row">${rowContent}</div>`);
+                        }
+                    },
+                    error: function () {
+                        alert('Failed to fetch restaurant data.');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
