@@ -7,7 +7,7 @@ def get_context(context):
     
 import frappe
 import requests
-
+ 
 @frappe.whitelist(allow_guest=True)
 def fetch_restaurants_with_distances():
     source_doc = frappe.get_all('source', fields=['lat', 'long'])[0]
